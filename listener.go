@@ -5,10 +5,13 @@ import (
 	//"crypto/x509"
 	"fmt"
 	//"io/ioutil"
-	"net"
-	"sync"
-	"time"
 	"flag"
+	"net"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 )
 
 var cipher_suite = []uint16{tls.TLS_RSA_WITH_RC4_128_SHA,
@@ -106,9 +109,9 @@ func main() {
 		raw_listener net.Listener
 		tls_listener net.Listener
 		err          error
-		//wg           sync.WaitGroup
-		t        *net.TCPAddr
-		tls_conf *tls.Config
+		wlist        sync.WaitGroup
+		t            *net.TCPAddr
+		tls_conf     *tls.Config
 	)
 	flag.Parse()
 	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5567")
@@ -128,8 +131,10 @@ func main() {
 	stopChan := make(chan bool)
 	defer tls_listener.Close()
 	defer raw_listener.Close()
+	shutdown := make(chan bool)
 
 	manage_listener := func(l net.Listener) {
+		wlist.Add(1)
 		var (
 			conn net.Conn
 			e    error
@@ -140,21 +145,36 @@ func main() {
 			wg.Wait()
 
 		}()
-		for {
-			if conn, e = l.Accept(); e != nil {
-				if e.(net.Error).Temporary() {
-					errChan <- fmt.Errorf("TCP Accept failed: %s", e)
-					continue
-				} else {
-					break
+		running := true
+		for running {
+			select {
+			case _, running = <-shutdown:
+
+			default:
+				if conn, e = l.Accept(); e != nil {
+					if e.(net.Error).Temporary() {
+						errChan <- fmt.Errorf("TCP Accept failed: %s", e)
+						continue
+					} else {
+						break
+					}
 				}
+				wg.Add(1)
+				go handleConnection(conn, stopChan, wg)
 			}
-			wg.Add(1)
-			go handleConnection(conn, stopChan, wg)
 		}
 
 	}
 	go manage_listener(tls_listener)
 	go manage_listener(raw_listener)
+
+	go func() {
+		chSignal := make(chan os.Signal, 1)
+		signal.Notify(chSignal, syscall.SIGINT)
+		<-chSignal
+		close(shutdown)
+		close(stopChan)
+	}()
+	wlist.Wait()
 
 }
