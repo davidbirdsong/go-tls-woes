@@ -2,12 +2,13 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
+	//"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	//"io/ioutil"
 	"net"
 	"sync"
 	"time"
+	"flag"
 )
 
 var cipher_suite = []uint16{tls.TLS_RSA_WITH_RC4_128_SHA,
@@ -25,6 +26,10 @@ var cipher_suite = []uint16{tls.TLS_RSA_WITH_RC4_128_SHA,
 	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 }
 
+var certfile = flag.String("certfile", "", "certfile for server")
+var keyfile = flag.String("keyfile", "", "keyfile")
+
+/*
 func certPoolFromFile(pemfile string) (*x509.CertPool, error) {
 	roots := x509.NewCertPool()
 	data, err := ioutil.ReadFile(pemfile)
@@ -36,6 +41,7 @@ func certPoolFromFile(pemfile string) (*x509.CertPool, error) {
 	}
 	return nil, fmt.Errorf("No PEM encoded certificates found in: %s\n", pemfile)
 }
+*/
 
 func tlsConfig(certfile, keyfile string) (*tls.Config, error) {
 	var (
@@ -104,12 +110,13 @@ func main() {
 		t        *net.TCPAddr
 		tls_conf *tls.Config
 	)
+	flag.Parse()
 	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5567")
 	tls_listener, err = net.ListenTCP("tcp", t)
 	if err != nil {
 		panic(err)
 	}
-	tls_conf, err = tlsConfig("", "")
+	tls_conf, err = tlsConfig(*certfile, *keyfile)
 	if err != nil {
 		panic(err)
 	}
