@@ -95,7 +95,7 @@ func main() {
 		tls_conf     *tls.Config
 	)
 	profFile, e := os.Create(*cpuprof)
-	if err != nil {
+	if e != nil {
 		panic(e)
 	}
 
