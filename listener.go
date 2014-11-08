@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime/pprof"
 	"sync"
 	"syscall"
 	"time"
@@ -29,6 +30,7 @@ var cipher_suite = []uint16{tls.TLS_RSA_WITH_RC4_128_SHA,
 
 var certfile = flag.String("certfile", "", "certfile for server")
 var keyfile = flag.String("keyfile", "", "keyfile")
+var cpuprof = flag.String("cpuprof", "", "cpuprofile out file")
 
 func tlsConfig(certfile, keyfile string) (*tls.Config, error) {
 	var (
@@ -92,6 +94,17 @@ func main() {
 		t            *net.TCPAddr
 		tls_conf     *tls.Config
 	)
+	profFile, e := os.Create(*cpuprof)
+	if err != nil {
+		panic(e)
+	}
+
+	pprof.StartCPUProfile(profFile)
+	defer func() {
+		pprof.StopCPUProfile()
+		profFile.Close()
+	}()
+
 	flag.Parse()
 	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5114")
 	tls_listener, err = net.ListenTCP("tcp", t)
