@@ -2,10 +2,8 @@ package main
 
 import (
 	"crypto/tls"
-	//"crypto/x509"
-	"fmt"
-	//"io/ioutil"
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -31,20 +29,6 @@ var cipher_suite = []uint16{tls.TLS_RSA_WITH_RC4_128_SHA,
 
 var certfile = flag.String("certfile", "", "certfile for server")
 var keyfile = flag.String("keyfile", "", "keyfile")
-
-/*
-func certPoolFromFile(pemfile string) (*x509.CertPool, error) {
-	roots := x509.NewCertPool()
-	data, err := ioutil.ReadFile(pemfile)
-	if err != nil {
-		return nil, err
-	}
-	if roots.AppendCertsFromPEM(data) {
-		return roots, nil
-	}
-	return nil, fmt.Errorf("No PEM encoded certificates found in: %s\n", pemfile)
-}
-*/
 
 func tlsConfig(certfile, keyfile string) (*tls.Config, error) {
 	var (
@@ -90,15 +74,11 @@ func handleConnection(conn net.Conn, stopChan chan bool, wg *sync.WaitGroup) {
 			n, e = conn.Read(buffer)
 			if e != nil {
 				if neterr, ok := e.(net.Error); ok && neterr.Timeout() {
-					fmt.Println("kjdkfaj\n")
+					continue
 				} else {
 					running = false
 				}
 			}
-			if n != 0 {
-				fmt.Printf("%s\n", buffer[0:n])
-			}
-
 		}
 	}
 
@@ -142,7 +122,7 @@ func main() {
 					fmt.Printf("TCP Accept failed: %s", e)
 					continue
 				} else {
-					fmt.Printf("TCP foo %s\n", e)
+					fmt.Printf("TCP badness %s\n", e)
 					break
 				}
 			}
