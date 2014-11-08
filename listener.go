@@ -68,7 +68,7 @@ func tlsConfig(certfile, keyfile string) (*tls.Config, error) {
 
 }
 
-func handleConnection(conn net.Conn, stopChan chan bool, wg sync.WaitGroup) {
+func handleConnection(conn net.Conn, stopChan chan bool, wg *sync.WaitGroup) {
 	defer func() {
 		conn.Close()
 		wg.Done()
@@ -96,7 +96,7 @@ func handleConnection(conn net.Conn, stopChan chan bool, wg sync.WaitGroup) {
 				}
 			}
 			if n != 0 {
-				fmt.Printf("%s\n")
+				fmt.Printf("%s\n", buffer[0:n])
 			}
 
 		}
@@ -127,45 +127,33 @@ func main() {
 
 	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5568")
 	raw_listener, err = net.ListenTCP("tcp", t)
-	errChan := make(chan error)
 	stopChan := make(chan bool)
-	defer tls_listener.Close()
-	defer raw_listener.Close()
 	shutdown := make(chan bool)
 
 	manage_listener := func(l net.Listener) {
-		wlist.Add(1)
 		var (
 			conn net.Conn
 			e    error
-			wg   sync.WaitGroup
 		)
-		defer func() {
-			l.Close()
-			wg.Wait()
-
-		}()
-		running := true
-		for running {
-			select {
-			case _, running = <-shutdown:
-
-			default:
-				if conn, e = l.Accept(); e != nil {
-					if e.(net.Error).Temporary() {
-						errChan <- fmt.Errorf("TCP Accept failed: %s", e)
-						continue
-					} else {
-						break
-					}
+		defer wlist.Done()
+		for {
+			if conn, e = l.Accept(); e != nil {
+				if e.(net.Error).Temporary() {
+					fmt.Printf("TCP Accept failed: %s", e)
+					continue
+				} else {
+					fmt.Printf("TCP foo %s\n", e)
+					break
 				}
-				wg.Add(1)
-				go handleConnection(conn, stopChan, wg)
 			}
+			wlist.Add(1)
+			go handleConnection(conn, stopChan, &wlist)
 		}
 
 	}
+	wlist.Add(1)
 	go manage_listener(tls_listener)
+	wlist.Add(1)
 	go manage_listener(raw_listener)
 
 	go func() {
@@ -174,6 +162,9 @@ func main() {
 		<-chSignal
 		close(shutdown)
 		close(stopChan)
+
+		tls_listener.Close()
+		raw_listener.Close()
 	}()
 	wlist.Wait()
 
