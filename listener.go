@@ -114,7 +114,7 @@ func main() {
 		tls_conf     *tls.Config
 	)
 	flag.Parse()
-	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5567")
+	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5114")
 	tls_listener, err = net.ListenTCP("tcp", t)
 	if err != nil {
 		panic(err)
@@ -125,7 +125,7 @@ func main() {
 	}
 	tls_listener = tls.NewListener(tls_listener, tls_conf)
 
-	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5568")
+	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5567")
 	raw_listener, err = net.ListenTCP("tcp", t)
 	stopChan := make(chan bool)
 	shutdown := make(chan bool)
