@@ -61,7 +61,6 @@ func handleConnection(conn net.Conn, stopChan chan bool, wg *sync.WaitGroup) {
 	var (
 		e      error
 		buffer []byte
-		n      int
 	)
 	buffer = make([]byte, 16384)
 
@@ -71,7 +70,7 @@ func handleConnection(conn net.Conn, stopChan chan bool, wg *sync.WaitGroup) {
 		select {
 		case _, running = <-stopChan:
 		default:
-			n, e = conn.Read(buffer)
+			_, e = conn.Read(buffer)
 			if e != nil {
 				if neterr, ok := e.(net.Error); ok && neterr.Timeout() {
 					continue
