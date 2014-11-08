@@ -94,6 +94,7 @@ func main() {
 		t            *net.TCPAddr
 		tls_conf     *tls.Config
 	)
+	flag.Parse()
 	fmt.Printf("creating cpuprofile file: %s\n", *cpuprof)
 	profFile, e := os.Create(*cpuprof)
 	if e != nil {
@@ -106,7 +107,6 @@ func main() {
 		profFile.Close()
 	}()
 
-	flag.Parse()
 	t, _ = net.ResolveTCPAddr("tcp", "0.0.0.0:5114")
 	tls_listener, err = net.ListenTCP("tcp", t)
 	if err != nil {
