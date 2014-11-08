@@ -94,6 +94,7 @@ func main() {
 		t            *net.TCPAddr
 		tls_conf     *tls.Config
 	)
+	fmt.Printf("creating cpuprofile file: %s\n", *cpuprof)
 	profFile, e := os.Create(*cpuprof)
 	if e != nil {
 		panic(e)
